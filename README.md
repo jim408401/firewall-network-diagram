@@ -1,4 +1,4 @@
-# Firewall Network Diagram Visualization System
+# Firewall Network Diagram
 
 An interactive chart system for visualizing firewall network topology and connection relationships. Supports multiple layout modes, filtering functions, and detailed information viewing to help administrators intuitively understand network architecture and firewall rules.
 
