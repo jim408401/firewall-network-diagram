@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firewall Network Graph</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 頂部標題列 -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1>Firewall Network</h1>
+                <div class="stats-display" id="statsDisplay">
+                    <span class="stat-item">節點: <span id="nodeCount">0</span></span>
+                    <span class="stat-item">連線: <span id="linkCount">0</span></span>
+                    <span class="stat-item">區域: <span id="zoneCount">0</span></span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="themeToggle" class="btn btn-outline" title="切換深色模式">
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <button id="refreshBtn" class="btn btn-primary">重新載入</button>
+                <button id="exportBtn" class="btn btn-secondary">匯出圖表</button>
+                <button id="helpBtn" class="btn btn-info">說明</button>
+            </div>
+        </header>
+
+        <div class="app-main">
+            <!-- 左側控制面板 -->
+            <aside class="control-panel">
+                <!-- 篩選器區域 -->
+                <div class="panel-section">
+                    <div class="section-header">
+                        <h3>篩選器</h3>
+                        <button id="toggleFilters" class="section-toggle">
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                    </div>
+                    
+                    <div class="filter-content" id="filterContent">
+                        <div class="filter-group">
+                            <label>來源區域：</label>
+                            <select id="sourceZoneFilter" multiple class="multi-select">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>目標區域：</label>
+                            <select id="targetZoneFilter" multiple class="multi-select">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>服務類型：</label>
+                            <select id="serviceFilter" multiple class="multi-select">
+                                <option value="">全部</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label>來源IP：</label>
+                            <input type="text" id="sourceIPFilter" placeholder="輸入 IP 搜尋" class="filter-input">
+                        </div>
+
+                        <div class="filter-group">
+                            <label>目標IP：</label>
+                            <input type="text" id="targetIPFilter" placeholder="輸入 IP 搜尋" class="filter-input">
+                        </div>
+
+                        <div class="filter-actions">
+                            <button id="applyFilters" class="btn btn-primary btn-sm">套用篩選</button>
+                            <button id="clearFilters" class="btn btn-secondary btn-sm">清除篩選</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 圖例區域 -->
+                <div class="panel-section">
+                    <h3>圖例說明</h3>
+                    <div class="legend-container">
+                        <div class="legend-category">
+                            <h4>節點類型</h4>
+                            <div class="legend-item">
+                                <div class="legend-node source-node"></div>
+                                <span>來源節點</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-node target-node"></div>
+                                <span>目標節點</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-node both-node"></div>
+                                <span>雙向節點</span>
+                            </div>
+                        </div>
+                        
+                        <div class="legend-category">
+                            <h4>連線狀態</h4>
+                            <div class="legend-item">
+                                <div class="legend-line normal-link"></div>
+                                <span>一般連線</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-line multiple-link"></div>
+                                <span>多重連線</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-line highlighted-link"></div>
+                                <span>選中連線</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 主要圖表區域 -->
+            <main class="graph-area">
+                <div class="graph-container">
+                    <div id="networkGraph" class="network-graph"></div>
+                    
+                    <!-- 圖表工具列 -->
+                    <div class="graph-toolbar">
+                        <div class="zoom-controls">
+                            <button id="zoomIn" class="btn btn-icon">➕</button>
+                            <button id="zoomOut" class="btn btn-icon">➖</button>
+                            <button id="fitView" class="btn btn-icon">🎯</button>
+                        </div>
+                        
+                        <div class="view-controls">
+                            <div class="control-group">
+                            <label>
+                                <input type="checkbox" id="showLabels" checked>
+                                顯示標籤
+                            </label>
+                            </div>
+                            
+                            <div class="control-group">
+                            <label>
+                                <input type="checkbox" id="showArrows" checked>
+                                顯示箭頭
+                            </label>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="layoutMode">布局模式：</label>
+                                <select id="layoutMode" class="layout-select">
+                                    <option value="force">力導向布局</option>
+                                    <option value="zone">分區布局</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 載入狀態 -->
+                    <div id="loadingIndicator" class="loading-indicator">
+                        <div class="spinner"></div>
+                        <span>載入中...</span>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 右側詳細資訊面板 -->
+            <aside class="details-panel" id="detailsPanel">
+                <div class="panel-header">
+                    <h3 id="detailsTitle">詳細資訊</h3>
+                    <button id="closeDetails" class="btn btn-icon">✖</button>
+                </div>
+                
+                <div class="panel-content" id="detailsContent">
+                    <div class="empty-state">
+                        <p>點擊節點或連線查看詳細資訊</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- 說明彈出視窗 -->
+        <div id="helpModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>功能介紹</h3>
+                    <button class="modal-close">✖</button>
+                </div>
+                <div class="modal-body">
+                    <h4>網路拓撲圖</h4>
+                    <ul>
+                        <li><strong>縮放圖表：</strong>使用滑鼠滾輪或縮放按鈕調整視圖</li>
+                        <li><strong>圖表資訊：</strong>切換標籤與箭頭顯示</li>
+                        <li><strong>布局模式：</strong>切換布局模式 (力導向、分區)</li>
+                        <li><strong>詳細資訊：</strong>點擊節點或連線查看詳細資訊</li>
+                    </ul>
+
+                    <h4>功能列</h4>
+                    <ul>
+                        <li><strong>狀態顯示：</strong>顯示目前網路拓撲的資訊</li>
+                        <li><strong>深色模式：</strong>點擊圖示切換深色模式</li>
+                        <li><strong>重新載入：</strong>重新載入網路拓撲圖</li>
+                        <li><strong>匯出圖片：</strong>將目前選擇的節點、連線匯出圖片</li>
+                    </ul>
+
+                    <h4>左側控制面板</h4>
+                    <ul>
+                        <li><strong>篩選功能：</strong>透過區域、服務類型與 IP 位址篩選內容</li>
+                        <li><strong>圖例說明：</strong>節點類型與連線狀態說明</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 篩選結果提示彈窗 -->
+        <div id="filterResultModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="filterResultTitle">篩選結果</h3>
+                    <button class="modal-close">✖</button>
+                </div>
+                <div class="modal-body" id="filterResultBody">
+                    <!-- 動態內容 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入模組化的JavaScript檔案 -->
+    <script src="js/utils.js"></script>
+    <script src="js/data-manager.js"></script>
+    <script src="js/layout-manager.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/interaction-handler.js"></script>
+    <script src="js/ui-controller.js"></script>
+    <script src="js/firewall-network-graph.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 
